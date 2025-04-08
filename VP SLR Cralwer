@@ -1,0 +1,104 @@
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import time
+import re
+
+def google_search(query, start, num_results=10):
+    search_url = f"https://www.google.com/search?q={query}&num={num_results}&start={start}"
+    response = requests.get(search_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"})
+    if response.status_code == 200:
+        return response.text
+    else:
+        print(f"Error: {response.status_code}")
+        return None
+
+def parse_search_results(html):
+    soup = BeautifulSoup(html, 'html.parser')
+    results = []
+    for g in soup.find_all('div', class_='g'):
+        title_element = g.find('h3')
+        link_element = g.find('a')
+        snippet_element = g.find('span', class_='aCOpRe')
+        if title_element and link_element:
+            title = title_element.text
+            link = link_element['href']
+            snippet = snippet_element.text if snippet_element else 'No snippet'
+            source_type = classify_source(link)
+            publication_year = extract_year(g)
+            results.append({'Title': title, 'Link': link, 'Snippet': snippet, 'SourceType': source_type, 'Year': publication_year})
+    return results
+
+def classify_source(url):
+    academic_domains = ['ieee.org', 'acm.org', 'springer.com', 'sciencedirect.com', 'wiley.com', 'tandfonline.com', 'jstor.org']
+    blog_domains = ['blogspot.com', 'wordpress.com', 'medium.com', 'tumblr.com', 'linkedin.com' ]
+    news_domains = ['nytimes.com', 'bbc.com', 'cnn.com', 'theguardian.com', 'forbes.com', 'reuters.com', 'bloomberg.com']
+    video_domains = ['youtube.com', 'vimeo.com']
+    whitepaper_keywords = ['whitepaper', 'white-paper', 'white_paper']
+    technical_report_keywords = ['technical-report', 'techreport', 'technical_report']
+
+    if 'scholar.google' in url:
+        return 'Google Scholar'
+    elif any(domain in url for domain in academic_domains):
+        return 'Academic Database'
+    elif any(domain in url for domain in blog_domains):
+        return 'Blog'
+    elif any(domain in url for domain in news_domains):
+        return 'News Article'
+    elif any(domain in url for domain in video_domains):
+        return 'Video'
+    elif any(keyword in url for keyword in whitepaper_keywords):
+        return 'Company White Paper'
+    elif any(keyword in url for keyword in technical_report_keywords):
+        return 'Technical Report'
+    else:
+        return 'Other'
+
+def extract_year(result):
+    # Extract year from the snippet or additional date information available
+    snippet_text = result.get_text()
+    year_match = re.search(r'\b(19|20)\d{2}\b', snippet_text)
+    if year_match:
+        return year_match.group(0)
+    # Check for common date format spans
+    date_spans = result.find_all('span', {'class': 'f'})
+    for span in date_spans:
+        year_match = re.search(r'\b(19|20)\d{2}\b', span.get_text())
+        if year_match:
+            return year_match.group(0)
+    return 'Unknown'
+
+def save_to_csv(results, filename):
+    df = pd.DataFrame(results)
+    df.to_csv(filename, index=False)
+
+def main():
+    search_queries = [
+        '"virtual production" AND ("education" OR "film studies" OR "media production" OR “screen industries”) AND ("skills" OR "competencies" OR "departments" OR "teaching" OR "artificial intelligence" OR AI OR "machine learning" OR "emergent workflows" OR "emergent technologies")',
+    ]
+    
+    for query in search_queries:
+        query_formatted = query.replace(' ', '+').replace('"', '%22').replace('(', '%28').replace(')', '%29')
+        print(f"Searching for: {query}")
+        
+        all_results = []
+        for start in range(0, 400, 10):  # Adjust the range for the number of results pages to fetch
+            html = google_search(query_formatted, start)
+            if html:
+                results = parse_search_results(html)
+                if results:
+                    all_results.extend(results)
+                else:
+                    print(f"No more results found at start={start} for query: {query}")
+                    break
+            time.sleep(2)  # Be polite and avoid hitting the server too hard
+        
+        if all_results:
+            filename = query.replace('"', '').replace(' ', '_').replace('(', '').replace(')', '').replace('AND', '').replace('OR', '') + '.csv'
+            save_to_csv(all_results, filename)
+            print(f"Results saved to {filename}")
+        else:
+            print(f"No results found for query: {query}")
+
+if __name__ == "__main__":
+    main()
