@@ -74,7 +74,7 @@ def save_to_csv(results, filename):
 
 def main():
     search_queries = [
-        '"virtual production" AND ("education" OR "film studies" OR "media production" OR “screen industries”) AND ("skills" OR "competencies" OR "departments" OR "teaching" OR "artificial intelligence" OR AI OR "machine learning" OR "emergent workflows" OR "emergent technologies")',
+        '"virtual production" AND ("education" OR "film studies" OR "media production" OR “screen industries”) AND ("skills" OR "competencies" OR "teaching" OR "artificial intelligence" OR AI OR "machine learning" OR "emergent workflows" OR "emergent technologies")',
     ]
     
     for query in search_queries:
