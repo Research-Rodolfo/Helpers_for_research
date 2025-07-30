@@ -30,7 +30,7 @@ def parse_search_results(html):
     return results
 
 def classify_source(url):
-    academic_domains = ['ieee.org', 'acm.org', 'springer.com', 'sciencedirect.com', 'wiley.com', 'tandfonline.com', 'jstor.org']
+    academic_domains = ['ieee.org', 'acm.org', 'springer.com', 'sciencedirect.com', 'wiley.com', 'tandfonline.com', 'jstor.org', 'eric.ed.gov']
     blog_domains = ['blogspot.com', 'wordpress.com', 'medium.com', 'tumblr.com', 'linkedin.com' ]
     news_domains = ['nytimes.com', 'bbc.com', 'cnn.com', 'theguardian.com', 'forbes.com', 'reuters.com', 'bloomberg.com']
     video_domains = ['youtube.com', 'vimeo.com']
